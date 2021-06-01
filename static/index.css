@@ -89,11 +89,19 @@ nav a {
   box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
 }
 
-.intro-square p {
+.intro-square {
   color: var(--dark);
-  line-height: 1.7em;
+  line-height: calc(var(--base-font-size)*1.08);
   font-weight: 600;
   letter-spacing: 0.2em;
+}
+
+.intro-listing ul {
+  list-style-type:none;
+}
+
+.intro-listing li  {
+  margin-left: 2em;
 }
 
 .intro-right-circle {
@@ -114,7 +122,7 @@ nav a {
 
 .intro-square-contact {
   display: flex;
-  margin: 10% 0 0 0;
+  margin: 5% 0 0 0;
   justify-content: flex-end;
 }
 
@@ -132,7 +140,7 @@ nav a {
 }
 
 .material-icons {
-  vertical-align: -5px;
+  vertical-align: -0.25em;
 }
 
 .primary-button {
