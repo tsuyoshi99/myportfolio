@@ -1,0 +1,130 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vikran-portfolio
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vikran-portfolio
+  namespace: vikran-portfolio
+  labels:
+    app: vikran-portfolio
+spec:
+  storageClassName: local-path
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vikran-portfolio
+  namespace: vikran-portfolio
+  labels:
+    app: vikran-portfolio
+spec:
+  selector:
+    matchLabels:
+      app: vikran-portfolio
+  replicas: 2
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: vikran-portfolio
+    spec:
+      containers:
+        - name: web
+          image: nginx:latest
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+            limits:
+              cpu: 100m
+              memory: 100Mi
+          livenessProbe:
+            tcpSocket:
+              port: 80
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            timeoutSeconds: 2
+            successThreshold: 1
+            failureThreshold: 3
+            periodSeconds: 10
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: vikran-portfolio
+              mountPath: /usr/share/nginx
+        - name: syncer
+          image: k8s.gcr.io/git-sync:v3.1.6
+          volumeMounts:
+            - name: vikran-portfolio
+              mountPath: /tmp/git
+          env:
+            - name: GIT_SYNC_REPO
+              value: https://github.com/tsuyoshi99/myportfolio.git
+            - name: GIT_SYNC_BRANCH
+              value: main
+            - name: GIT_SYNC_DEST
+              value: html
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+            limits:
+              cpu: 100m
+              memory: 100Mi
+      volumes:
+        - name: vikran-portfolio
+          persistentVolumeClaim:
+            claimName: vikran-portfolio
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vikran-portfolio
+  namespace: vikran-portfolio
+spec:
+  selector:
+    app: vikran-portfolio
+  type: ClusterIP
+  ports:
+    - name: vikran-portfolio
+      protocol: TCP
+      port: 80
+      targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vikran-portfolio
+  namespace: vikran-portfolio
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: vikran-portfolio
+                port:
+                  number: 80
