@@ -3,21 +3,6 @@ kind: Namespace
 metadata:
   name: vikran-portfolio
 ---
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: vikran-portfolio
-  namespace: vikran-portfolio
-  labels:
-    app: vikran-portfolio
-spec:
-  storageClassName: local-path
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 2Gi
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -29,7 +14,7 @@ spec:
   selector:
     matchLabels:
       app: vikran-portfolio
-  replicas: 2
+  replicas: 1
   strategy:
     rollingUpdate:
       maxSurge: 25%
@@ -42,7 +27,7 @@ spec:
     spec:
       containers:
         - name: web
-          image: nginx:latest
+          image: registry.hunvikran.com/vikran-portfolio:latest
           resources:
             requests:
               cpu: 100m
@@ -69,32 +54,8 @@ spec:
             periodSeconds: 10
           ports:
             - containerPort: 80
-          volumeMounts:
-            - name: vikran-portfolio
-              mountPath: /usr/share/nginx
-        - name: syncer
-          image: k8s.gcr.io/git-sync:v3.1.6
-          volumeMounts:
-            - name: vikran-portfolio
-              mountPath: /tmp/git
-          env:
-            - name: GIT_SYNC_REPO
-              value: https://github.com/tsuyoshi99/myportfolio.git
-            - name: GIT_SYNC_BRANCH
-              value: main
-            - name: GIT_SYNC_DEST
-              value: html
-          resources:
-            requests:
-              cpu: 100m
-              memory: 100Mi
-            limits:
-              cpu: 100m
-              memory: 100Mi
-      volumes:
-        - name: vikran-portfolio
-          persistentVolumeClaim:
-            claimName: vikran-portfolio
+      imagePullSecrets:
+        - name: regcred
       restartPolicy: Always
 ---
 apiVersion: v1
@@ -120,7 +81,6 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
-    cert-manager.io/cluster-issuer: letsencrypt-production
 spec:
   rules:
     - host: hunvikran.com
@@ -137,4 +97,6 @@ spec:
     - hosts:
         - hunvikran.com
         - www.hunvikran.com
+        - pos.hunvikran.com
+        - registry.hunvikran.com
       secretName: hunvikran.com-tls
